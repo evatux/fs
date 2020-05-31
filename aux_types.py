@@ -57,7 +57,7 @@ class Reader:
         kwargs["size"] = size
         return self.reader.intr(**kwargs)
 
-    def subreader(self, offset):
+    def subreader(self, offset = 0):
         return Reader(self, offset)
 
 
@@ -90,5 +90,5 @@ class FileReader:
             print("[%8x : %8d] 0x%X (%d)" % (offset, offset, i, i))
         return i
 
-    def subreader(self, offset):
+    def subreader(self, offset = 0):
         return Reader(self, offset)

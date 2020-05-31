@@ -1,10 +1,9 @@
-import aux_types
+from aux_types import ExtendableType, FileReader
 from spec import BPB
 
-from spec import DIR_TYPE_MARK # TODO: remove
 import dir_entry
 
-class Meta(aux_types.ExtendableType):
+class Meta(ExtendableType):
     def __init__(self, raw):
         # BPB
         self.BytesPerSec = raw.intr(BPB.BYTES_PER_SEC)
@@ -22,7 +21,7 @@ class Meta(aux_types.ExtendableType):
 
 class Fat:
     def __init__(self, raw_fs_filename):
-        self.raw = aux_types.FileReader(raw_fs_filename)
+        self.raw = FileReader(raw_fs_filename)
         self.meta = Meta(self.raw)
 
         self.RootClusterOffset = self.cluster_offset(self.meta.RootClus)
@@ -32,13 +31,16 @@ class Fat:
         return self.meta.FirstDataSector + (offset - 2) * self.meta.SecPerClus
 
     def ls(self):
-        i = 0
+        sector_reader = self.raw.subreader(self.CurrentSector * self.meta.BytesPerSec)
+
+        next_entry = 0
         while True:
-            entry = dir_entry.DirEntry(self.raw.subreader(self.CurrentSector * self.meta.BytesPerSec), i)
-            i = i + 1
-            if entry.type == DIR_TYPE_MARK.EMPTY:
+            record = dir_entry.DirRecord(sector_reader, next_entry)
+            print("%s\n%s\n" % (record, record.debug_str()))
+
+            if record.is_empty():
                 break
-            else:
-                print(entry.filename)
+
+            next_entry = record.entry_last
 
 
