@@ -1,7 +1,7 @@
 from aux_types import ExtendableType, FileReader
 from spec import BPB
 
-import dir_entry
+from dir_record import DirRecord
 
 class Meta(ExtendableType):
     def __init__(self, raw):
@@ -20,9 +20,10 @@ class Meta(ExtendableType):
                 self.NumFats * self.FatSize
         self.DataSectors = self.TotalSec32 - self.FirstDataSector
         self.MaxClusters = self.DataSectors / self.SecPerClus + 1
+        self.ClusterSize = self.SecPerClus * self.BytesPerSec
 
 
-class FatWalker:
+class Walker:
     def __init__(self, raw_fs, meta, cluster_base):
         self.raw_fs = raw_fs
         self.meta = meta
@@ -51,6 +52,9 @@ class FatWalker:
     def len(self):
         return len(self.cluster_list)
 
+    def is_last(self):
+        return self.cluster_list[self.pos] > self.MaxCluster
+
     def cluster_reader(self):
         cluster = self.cluster_list[self.pos]
         assert self.__valid_cluster(cluster)
@@ -74,18 +78,23 @@ class Fat:
         self.raw = FileReader(raw_fs_filename)
         self.meta = Meta(self.raw)
 
-    def ls(self):
-        walker = FatWalker(self.raw, self.meta, self.meta.RootClus)
-        sector_reader = walker.cluster_reader()
+    def ls(self, dir_cluster = 0):
+        if dir_cluster == 0: dir_cluster = self.meta.RootClus # ls('/')
+
+        walker = Walker(self.raw, self.meta, dir_cluster)
+
+        cluster_reader = walker.cluster_reader()
 
         next_entry = 0
         while True:
-            record = dir_entry.DirRecord(sector_reader, next_entry)
+            record = DirRecord(cluster_reader, next_entry)
             print("%s\n%s\n" % (record, record.debug_str()))
 
-            if record.is_empty():
-                break
+            if record.is_empty(): break # end of directory
 
             next_entry = record.entry_last
+            if next_entry * DirRecord.entry_size() == self.meta.ClusterSize:
+                walker.step()
+                if walker.is_last(): return # last cluster (could this happen ?)
 
 

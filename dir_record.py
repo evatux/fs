@@ -14,7 +14,12 @@ class DirRecord:
     -------
     is_empty(), is_unused(), is_file(), is_dir() : bool
     name(), longname() : str
+    entry_size() : int [static]
     """
+
+    @staticmethod
+    def entry_size():
+        return DIR_ENTRY_SIZE
 
     def __init__(self, reader, entry_first):
         self.base_reader = reader
