@@ -22,6 +22,23 @@ class Meta(ExtendableType):
         self.MaxClusters = self.DataSectors / self.SecPerClus + 1
         self.ClusterSize = self.SecPerClus * self.BytesPerSec
 
+    def __str__(self):
+        ret = ">>> META.INFO <<<"
+        ret += "\nBytesPerSec: " + str(self.BytesPerSec)
+        ret += "\nSecPerClus: " + str(self.SecPerClus)
+        ret += "\nReservedSecCount: " + str(self.ReservedSecCount)
+        ret += "\nNumFats: " + str(self.NumFats)
+        ret += "\nTotalSec32: " + str(self.TotalSec32)
+        ret += "\nFatSize: " + str(self.FatSize)
+        ret += "\nRootClus: " + str(self.RootClus)
+        ret += "\nSignature: " + str(self.Signature)
+        ret += "\nFirstDataSector: " + str(self.FirstDataSector)
+        ret += "\nDataSectors: " + str(self.DataSectors)
+        ret += "\nMaxClusters: " + str(self.MaxClusters)
+        ret += "\nClusterSize: " + str(self.ClusterSize)
+        ret += "\n>>>>>>>>.<<<<<<<<"
+        return ret
+
 
 class Walker:
     def __init__(self, raw_fs, meta, cluster_base):
@@ -34,7 +51,7 @@ class Walker:
         self.cluster_list = [self.cluster_base]
         self.pos = 0
 
-    def step(n_clusters = 1):
+    def step(self, n_clusters = 1):
         if self.pos + n_clusters < self.len():
             self.pos += n_clusters
             assert self.pos >= 0
@@ -42,9 +59,10 @@ class Walker:
 
         n_clusters -= self.len() - 1 - self.pos
 
-        for i in range(n_cluster):
-            assert(self.cluster_list[-1] <= self.MaxCluster)
+        for _ in range(n_clusters):
+            assert(self.__valid_cluster(self.cluster_list[-1]))
             next_cluster = self.next_cluster(self.cluster_list[-1])
+            print("@@@ next_cluster: ", next_cluster)
             self.cluster_list.append(next_cluster)
 
         self.pos = self.len() - 1
@@ -53,7 +71,7 @@ class Walker:
         return len(self.cluster_list)
 
     def is_last(self):
-        return self.cluster_list[self.pos] > self.MaxCluster
+        return self.cluster_list[self.pos] > self.meta.MaxClusters
 
     def cluster_reader(self):
         cluster = self.cluster_list[self.pos]
@@ -70,7 +88,9 @@ class Walker:
         return self.meta.FirstDataSector + (offset - 2) * self.meta.SecPerClus
 
     def __valid_cluster(self, cluster):
-        return 0 <= cluster and cluster <= self.meta.MaxClusters
+        ok = 2 <= cluster and cluster <= self.meta.MaxClusters
+        if not ok: print("@@@ assert: cluster = ", cluster)
+        return ok
 
 
 class Fat:
@@ -78,23 +98,50 @@ class Fat:
         self.raw = FileReader(raw_fs_filename)
         self.meta = Meta(self.raw)
 
-    def ls(self, dir_cluster = 0):
-        if dir_cluster == 0: dir_cluster = self.meta.RootClus # ls('/')
+    def root_walker(self):
+        return Walker(self.raw, self.meta, self.meta.RootClus)
 
-        walker = Walker(self.raw, self.meta, dir_cluster)
-
+    def ls(self, walker):
         cluster_reader = walker.cluster_reader()
 
         next_entry = 0
         while True:
             record = DirRecord(cluster_reader, next_entry)
-            print("%s\n%s\n" % (record, record.debug_str()))
 
-            if record.is_empty(): break # end of directory
+            # print("%s\n%s\n" % (record, record.debug_str()))
+            print("%s" % record)
+
+            if record.is_empty(): return # end of directory
+
+            next_entry = record.entry_last
+            print("@@@ next_entry: ", next_entry)
+            if next_entry * DirRecord.entry_size() == self.meta.ClusterSize:
+                print("@@@ step")
+                walker.step()
+                if walker.is_last(): return # last cluster (could this happen ?)
+                cluster_reader = walker.cluster_reader()
+
+    def cd(self, parent_walker, dir_name):
+        cluster_reader = parent_walker.cluster_reader()
+
+        next_entry = 0
+        while True:
+            record = DirRecord(cluster_reader, next_entry)
+
+            if record.is_empty(): return None # end of directory
+
+            if record.is_dir():
+                match = dir_name.lower() == record.name().lower()
+                if not match:
+                    lname = record.longname()
+                    if lname: match = dir_name.lower() == lname.lower()
+                if match:
+                    return Walker(self.raw, self.meta, record.cluster())
 
             next_entry = record.entry_last
             if next_entry * DirRecord.entry_size() == self.meta.ClusterSize:
-                walker.step()
-                if walker.is_last(): return # last cluster (could this happen ?)
+                parent_walker.step()
+                if parent_walker.is_last(): return # last cluster (could this happen ?)
+                cluster_reader = parent_walker.cluster_reader()
 
-
+        return None

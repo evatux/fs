@@ -14,6 +14,7 @@ class DirRecord:
     -------
     is_empty(), is_unused(), is_file(), is_dir() : bool
     name(), longname() : str
+    cluster() : int
     entry_size() : int [static]
     """
 
@@ -45,6 +46,8 @@ class DirRecord:
 
         self._name = self.reader().read_bytes(DIR_ENTRY.NAME).decode("utf-8").rstrip(' ')
         self._ext = self.reader().read_bytes(DIR_ENTRY.EXT).decode("utf-8").rstrip(' ')
+        self._cluster_high = self.reader().intr(DIR_ENTRY.CLUS_HIGH)
+        self._cluster_low = self.reader().intr(DIR_ENTRY.CLUS_LOW)
 
     def reader(self, entry_offset = -1):
         current_length = self.entry_last - self.entry_first
@@ -96,6 +99,9 @@ class DirRecord:
 
     def longname(self):
         return self._longname
+
+    def cluster(self):
+        return (self._cluster_high << 16) | self._cluster_low
 
     # private section
 
