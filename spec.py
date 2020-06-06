@@ -6,6 +6,7 @@ BPB = aux_types.SizeOffsetTypeSet((
         ("SEC_PER_CLUS"       , 1, 0x0D),
         ("RESERVED_SEC_COUNT" , 2, 0x0E),
         ("NUM_FATS"           , 1, 0x10),
+        ("TOTAL_SEC_32"       , 4, 0x20),
         ("FAT_SIZE"           , 4, 0x24),
         ("ROOT_CLUS"          , 4, 0x2C),
         ("SIGNATURE"          , 2, 0x1FE),
