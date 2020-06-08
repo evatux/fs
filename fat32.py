@@ -47,8 +47,7 @@ class Walker:
         self.fat_reader = raw_fs.subreader(
                 self.meta.ReservedSecCount * self.meta.BytesPerSec)
 
-        self.cluster_base = cluster_base
-        self.cluster_list = [self.cluster_base]
+        self.cluster_list = [cluster_base]
         self.pos = 0
 
     def step(self, n_clusters = 1):
@@ -82,7 +81,7 @@ class Walker:
     # private methods
 
     def next_cluster(self, cluster):
-        return self.fat_reader.intr(offset = cluster * 4, size = 4)
+        return self.fat_reader.intr(offset = cluster * 4, size = 4) & 0x0FFFFFFF
 
     def cluster_offset_in_sectors(self, offset):
         return self.meta.FirstDataSector + (offset - 2) * self.meta.SecPerClus
@@ -114,12 +113,11 @@ class Fat:
             if record.is_empty(): return # end of directory
 
             next_entry = record.entry_last
-            print("@@@ next_entry: ", next_entry)
             if next_entry * DirRecord.entry_size() == self.meta.ClusterSize:
-                print("@@@ step")
                 walker.step()
                 if walker.is_last(): return # last cluster (could this happen ?)
                 cluster_reader = walker.cluster_reader()
+                next_entry = 0
 
     def cd(self, parent_walker, dir_name):
         cluster_reader = parent_walker.cluster_reader()
@@ -143,5 +141,6 @@ class Fat:
                 parent_walker.step()
                 if parent_walker.is_last(): return # last cluster (could this happen ?)
                 cluster_reader = parent_walker.cluster_reader()
+                next_entry = 0
 
         return None
