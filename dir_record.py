@@ -68,15 +68,19 @@ class DirRecord:
             return self.name(True)
 
     def debug_str(self):
-        str = "\tentries: %d .. %d\n" % (self.entry_first, self.entry_last)
-        str += "\ttype: %s\n" % ["empty", "unused", "dir", "file"][self.type]
+        return str(self.info())
 
-        if not self: return str.rstrip('\n')
+    def info(self):
+        d = {}
 
-        str += "\tname: %s\n" % self.name()
-        if self.longname(): str += "\tlongname: %s\n" % self.longname()
+        d["entries"] = (self.entry_first, self.entry_last)
+        d["type"] = ["empty", "unused", "dir", "file"][self.type]
+        if not self: return d
 
-        return str.rstrip('\n')
+        d["name"] = self.name()
+        d["longname"] = self.longname()
+
+        return d
 
     def is_empty(self):
         return self.type == RECTYPE.EMPTY

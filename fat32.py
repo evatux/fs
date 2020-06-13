@@ -101,6 +101,8 @@ class Fat:
         return Walker(self.raw, self.meta, self.meta.RootClus)
 
     def ls(self, walker):
+        ret = []
+
         cluster_reader = walker.cluster_reader()
 
         next_entry = 0
@@ -108,14 +110,14 @@ class Fat:
             record = DirRecord(cluster_reader, next_entry)
 
             # print("%s\n%s\n" % (record, record.debug_str()))
-            print("%s" % record)
+            ret.append(record.info())
 
-            if record.is_empty(): return # end of directory
+            if record.is_empty(): return ret # end of directory
 
             next_entry = record.entry_last
             if next_entry * DirRecord.entry_size() == self.meta.ClusterSize:
                 walker.step()
-                if walker.is_last(): return # last cluster (could this happen ?)
+                if walker.is_last(): return ret # last cluster (could this happen ?)
                 cluster_reader = walker.cluster_reader()
                 next_entry = 0
 
