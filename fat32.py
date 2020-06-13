@@ -146,3 +146,15 @@ class Fat:
                 next_entry = 0
 
         return None
+
+    def read_walker(self, walker, size):
+        data = b''
+        read_size = 0
+
+        cluster_reader = walker.cluster_reader()
+        while read_size < size:
+            this_read_size = min(size - read, self.meta.ClusterSize)
+            data += cluster_reader.read_bytes(offset=0, size=this_read_size)
+            read_size += this_read_size
+
+        return data
