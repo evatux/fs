@@ -2,6 +2,15 @@ import sys
 
 import fat32
 
+class bcolors:
+    RED   = "\033[1;31m"
+    BLUE  = "\033[1;34m"
+    CYAN  = "\033[1;36m"
+    GREEN = "\033[0;32m"
+    RESET = "\033[0;0m"
+    BOLD    = "\033[;1m"
+    REVERSE = "\033[;7m"
+
 fdisk = sys.argv[1] if len(sys.argv) >= 2 else "../fat32.disk"
 
 def str_size(size):
@@ -19,9 +28,9 @@ def print_ls(info_list):
     for x in printable:
         print("%s " % str_size(x["size"]), end='')
         if x["type"] == "dir":
-            print("[%s]" % name(x))
+            print("[" + bcolors.BLUE + name(x) + bcolors.RESET + "]")
         else:
-            print("%s" % name(x))
+            print(bcolors.GREEN + name(x) + bcolors.RESET)
 
 if __name__ == "__main__":
     fs = fat32.Fat(fdisk)
