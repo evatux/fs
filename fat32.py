@@ -121,7 +121,7 @@ class Fat:
                 cluster_reader = walker.cluster_reader()
                 next_entry = 0
 
-    def cd(self, parent_walker, dir_name):
+    def generic_open(self, parent_walker, name, ftype):
         cluster_reader = parent_walker.cluster_reader()
 
         next_entry = 0
@@ -130,22 +130,29 @@ class Fat:
 
             if record.is_empty(): return None # end of directory
 
-            if record.is_dir():
-                match = dir_name.lower() == record.name().lower()
+            if record.ftype() == ftype:
+                match = name.lower() == record.name().lower()
                 if not match:
                     lname = record.longname()
-                    if lname: match = dir_name.lower() == lname.lower()
+                    if lname: match = name.lower() == lname.lower()
                 if match:
-                    return Walker(self.raw, self.meta, record.cluster())
+                    return Walker(self.raw, self.meta, record.cluster()), record.size()
 
             next_entry = record.entry_last
             if next_entry * DirRecord.entry_size() == self.meta.ClusterSize:
                 parent_walker.step()
-                if parent_walker.is_last(): return # last cluster (could this happen ?)
+                if parent_walker.is_last(): return None # last cluster (could this happen ?)
                 cluster_reader = parent_walker.cluster_reader()
                 next_entry = 0
 
         return None
+
+    def cd(self, parent_walker, dir_name):
+        ret = self.generic_open(parent_walker, dirname, "dir")
+        return ret[0] if ret else ret
+
+    def open(self, parent_walker, fname):
+        return self.generic_open(parent_walker, fname, "file")
 
     def read_walker(self, walker, size):
         data = b''

@@ -75,7 +75,7 @@ class DirRecord:
         d = {}
 
         d["entries"] = (self.entry_first, self.entry_last)
-        d["type"] = ["empty", "unused", "dir", "file"][self.type]
+        d["type"] = self.ftype()
         if not self: return d
 
         d["name"] = self.name()
@@ -95,6 +95,9 @@ class DirRecord:
 
     def is_dir(self):
         return self.type == RECTYPE.DIR
+
+    def ftype(self):
+        return ["empty", "unused", "dir", "file"][self.type]
 
     def name(self, nice = False):
         if nice == True and self._longname:
