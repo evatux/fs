@@ -40,6 +40,25 @@ def print_ls(info_list):
         else:
             cprint(bcolors.GREEN, name(x))
 
+def sanitize_dir(dname):
+    if dname != '/' and dname.endswith('/'): return dname[:-1]
+    return dname
+
+def try_cd(fs, walker, dname):
+    if dname == '/':
+        return fs.root_walker()
+
+    if '/' not in dname:
+        return fs.cd(walker, dname)
+
+    base, rest = dname.split('/', maxsplit=1)
+    child_walker = fs.cd(walker, base)
+    if not child_walker:
+        return None
+    else:
+        return try_cd(fs, child_walker, rest)
+
+
 if __name__ == "__main__":
     fs = fat32.Fat(fdisk)
     walker = fs.root_walker()
@@ -50,14 +69,18 @@ if __name__ == "__main__":
         if cmd in ("exit", "quit"):
             print("bye")
             sys.exit(0)
-        elif cmd == "ls":
-            print_ls(fs.ls(walker))
+        elif cmd.startswith("ls"):
+            ls_walker = walker
+            if cmd.startswith("ls "):
+                dname = sanitize_dir(cmd[3:])
+                ls_walker = try_cd(fs, walker, dname)
+            if not ls_walker:
+                error("not such direcory")
+            else:
+                print_ls(fs.ls(ls_walker))
         elif cmd.startswith('cd '):
-            subdir = cmd[3:]
-            if subdir == '/':
-                walker = fs.root_walker()
-                continue
-            child_walker = fs.cd(walker, subdir)
+            dname = sanitize_dir(cmd[3:])
+            child_walker = try_cd(fs, walker, dname)
             if not child_walker:
                 error("not such directory")
             else:
