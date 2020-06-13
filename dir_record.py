@@ -48,6 +48,7 @@ class DirRecord:
         self._ext = self.reader().read_bytes(DIR_ENTRY.EXT).decode("utf-8").rstrip(' ')
         self._cluster_high = self.reader().intr(DIR_ENTRY.CLUS_HIGH)
         self._cluster_low = self.reader().intr(DIR_ENTRY.CLUS_LOW)
+        self._size = self.reader().intr(DIR_ENTRY.SIZE)
 
     def reader(self, entry_offset = -1):
         current_length = self.entry_last - self.entry_first
@@ -79,6 +80,7 @@ class DirRecord:
 
         d["name"] = self.name()
         d["longname"] = self.longname()
+        d["size"] = self.size()
 
         return d
 
@@ -103,6 +105,9 @@ class DirRecord:
 
     def longname(self):
         return self._longname
+
+    def size(self):
+        return self._size
 
     def cluster(self):
         return (self._cluster_high << 16) | self._cluster_low

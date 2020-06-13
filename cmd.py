@@ -4,13 +4,20 @@ import fat32
 
 fdisk = sys.argv[1] if len(sys.argv) >= 2 else "../fat32.disk"
 
+def str_size(size):
+    mod = ["B", "KB", "MB", "GB"]
+    for i in range(len(mod)):
+        if size < 10 * 1024: return "%5d %s" % (size, mod[i])
+        size /= 1024
+
 def print_ls(info_list):
     printable = [x for x in info_list if x["type"] in ("dir", "file")]
-    sorted(printable, key = lambda x: (x["type"], x["name"]))
+    printable.sort(key = lambda x: (x["type"], x["name"]))
 
     name = lambda x: x["longname"] if x["longname"] else x["name"]
 
     for x in printable:
+        print("%s " % str_size(x["size"]), end='')
         if x["type"] == "dir":
             print("[%s]" % name(x))
         else:
