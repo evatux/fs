@@ -66,7 +66,7 @@ if __name__ == "__main__":
             fname = cmd[4:]
             child_walker, size = fs.open(walker, fname)
             if not child_walker:
-                print("not such file")
+                error("not such file")
             else:
                 print(fs.read_walker(child_walker, size).decode("ascii"), end='')
         elif cmd == "info.meta":
