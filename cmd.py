@@ -96,4 +96,4 @@ if __name__ == "__main__":
         elif cmd == "info.meta":
             print(fs.meta)
         else:
-            error("unknown command. Known: cd, ls, exit")
+            error("unknown command. Known: cat, cd, ls, exit")
