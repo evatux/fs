@@ -148,7 +148,7 @@ class Fat:
         return None
 
     def cd(self, parent_walker, dir_name):
-        ret = self.generic_open(parent_walker, dirname, "dir")
+        ret = self.generic_open(parent_walker, dir_name, "dir")
         return ret[0] if ret else ret
 
     def open(self, parent_walker, fname):
@@ -160,7 +160,7 @@ class Fat:
 
         cluster_reader = walker.cluster_reader()
         while read_size < size:
-            this_read_size = min(size - read, self.meta.ClusterSize)
+            this_read_size = min(size - read_size, self.meta.ClusterSize)
             data += cluster_reader.read_bytes(offset=0, size=this_read_size)
             read_size += this_read_size
 

@@ -11,6 +11,14 @@ class bcolors:
     BOLD    = "\033[;1m"
     REVERSE = "\033[;7m"
 
+def cprint(color, *args, **kwargs):
+    print(color, *args, **kwargs, end='')
+    print(bcolors.RESET)
+
+def error(*args, **kwargs):
+    return cprint(bcolors.RED, '# error: ', *args, **kwargs)
+
+
 fdisk = sys.argv[1] if len(sys.argv) >= 2 else "../fat32.disk"
 
 def str_size(size):
@@ -28,9 +36,9 @@ def print_ls(info_list):
     for x in printable:
         print("%s " % str_size(x["size"]), end='')
         if x["type"] == "dir":
-            print("[" + bcolors.BLUE + name(x) + bcolors.RESET + "]")
+            cprint(bcolors.BLUE, "[" + name(x) + "]")
         else:
-            print(bcolors.GREEN + name(x) + bcolors.RESET)
+            cprint(bcolors.GREEN, name(x))
 
 if __name__ == "__main__":
     fs = fat32.Fat(fdisk)
@@ -51,10 +59,17 @@ if __name__ == "__main__":
                 continue
             child_walker = fs.cd(walker, subdir)
             if not child_walker:
-                print("# [error] not such directory")
+                error("not such directory")
             else:
                 walker = child_walker
+        elif cmd.startswith('cat '):
+            fname = cmd[4:]
+            child_walker, size = fs.open(walker, fname)
+            if not child_walker:
+                print("not such file")
+            else:
+                print(fs.read_walker(child_walker, size).decode("ascii"), end='')
         elif cmd == "info.meta":
             print(fs.meta)
         else:
-            print("# [error] unknown command. Known: cd, ls, exit")
+            error("unknown command. Known: cd, ls, exit")
